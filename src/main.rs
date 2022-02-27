@@ -1,9 +1,12 @@
+use newsletter_sys::configuration::get_configuration;
+use newsletter_sys::startup::run;
 use std::net::TcpListener;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed in binding address/port!");
-    let port = listener.local_addr().unwrap().port();
-    println!("Allocated port: {}", port);
-    newsletter_sys::startup::run(listener)?.await
+    // Read configuration
+    let configs = get_configuration().expect("Failed to read configs!");
+    let address = format!("127.0.0.1:{}", configs.application_port);
+    let listener = TcpListener::bind(address).expect("Failed in binding address/port!");
+    run(listener)?.await
 }
