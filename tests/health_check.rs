@@ -6,7 +6,7 @@ fn spawn_app() -> String {
     let port = listener.local_addr().unwrap().port();
 
     // Server config
-    let test_server = newsletter_sys::run(listener).expect("Failed to bind address!");
+    let test_server = newsletter_sys::startup::run(listener).expect("Failed to bind address!");
     // launch the server on the background
     let _ = tokio::spawn(test_server);
 
