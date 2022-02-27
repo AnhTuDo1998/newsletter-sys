@@ -1,6 +1,9 @@
 use newsletter_sys::configuration::get_configuration;
+use newsletter_sys::configuration::DatabaseSettings;
 use sqlx::PgPool;
+use sqlx::{Connection, Executor, PgConnection};
 use std::net::TcpListener;
+use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
@@ -16,10 +19,12 @@ async fn spawn_app() -> TestApp {
     let address = format!("http://127.0.0.1:{}", port);
 
     // Server config
-    let configs = get_configuration().expect("Failed to read configuration.");
-    let db_pool = PgPool::connect(&configs.database.connection_string())
-        .await
-        .expect("Failed to connect to Postgres.");
+    let mut configs = get_configuration().expect("Failed to read configuration.");
+
+    // Change name of database every instance this function is called
+    // For isolation of test
+    configs.database.database_name = Uuid::new_v4().to_string();
+    let db_pool = configure_database(&configs.database).await;
 
     let test_server =
         newsletter_sys::startup::run(listener, db_pool.clone()).expect("Failed to bind address!");
@@ -28,6 +33,29 @@ async fn spawn_app() -> TestApp {
 
     // Return a testapp that store configs and connection db states.
     TestApp { address, db_pool }
+}
+
+pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
+    let mut connection = PgConnection::connect(&config.connection_string_without_db())
+        .await
+        .expect("Failed to connect to Postgres.");
+
+    // Create our own DB everytime for test isolation
+    connection
+        .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+        .await
+        .expect("Failed to create random database for testing isolation.");
+
+    // Migrate DB
+    let connection_pool = PgPool::connect(&config.connection_string())
+        .await
+        .expect("Failed to connet to Postgres.");
+    sqlx::migrate!("./migrations")
+        .run(&connection_pool)
+        .await
+        .expect("Failed to migrate the random database.");
+
+    connection_pool
 }
 
 #[tokio::test]
