@@ -1,9 +1,19 @@
 use newsletter_sys::configuration::get_configuration;
 use newsletter_sys::configuration::DatabaseSettings;
+use newsletter_sys::telemetry::{get_subscriber, init_subscriber};
+use once_cell::sync::Lazy;
 use sqlx::PgPool;
 use sqlx::{Connection, Executor, PgConnection};
 use std::net::TcpListener;
 use uuid::Uuid;
+
+// Ensure one init only
+static TRACING: Lazy<()> = Lazy::new(|| {
+        // Init telemetry tracer
+        let subscriber = get_subscriber("test".into(), "debug".into());
+        init_subscriber(subscriber);
+    
+});
 
 pub struct TestApp {
     pub address: String,
@@ -11,6 +21,9 @@ pub struct TestApp {
 }
 
 async fn spawn_app() -> TestApp {
+    // Only call TRACING once, the next times are all skipped
+    Lazy::force(&TRACING);
+
     // Bind port and retrieve the random port allocated
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
 
