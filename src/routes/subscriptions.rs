@@ -4,8 +4,8 @@ use actix_web::web::HttpResponse;
 use chrono::Utc;
 use serde::Deserialize;
 use sqlx::PgPool;
-use uuid::Uuid;
 use tracing::Instrument;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct FormData {
@@ -26,9 +26,7 @@ pub async fn subscribe_handler(form: Form<FormData>, db_pool: web::Data<PgPool>)
 
     let _request_span_guard = request_span.enter();
 
-    let query_span = tracing::info_span!(
-        "Saving new subscriber details in the database"
-    );
+    let query_span = tracing::info_span!("Saving new subscriber details in the database");
 
     match sqlx::query!(
         r#"
@@ -41,14 +39,17 @@ pub async fn subscribe_handler(form: Form<FormData>, db_pool: web::Data<PgPool>)
         Utc::now()
     )
     // get_ref is to get immutable ref of PgConnection wrapped in web::Data ptr
-    .execute(db_pool.as_ref()).instrument(query_span)
+    .execute(db_pool.as_ref())
+    .instrument(query_span)
     .await
     {
-        Ok(_) => {
-            HttpResponse::Ok().finish()
-        },
+        Ok(_) => HttpResponse::Ok().finish(),
         Err(e) => {
-            tracing::error!("request_id {} - Failed to execute query: {:?}", request_id, e);
+            tracing::error!(
+                "request_id {} - Failed to execute query: {:?}",
+                request_id,
+                e
+            );
             HttpResponse::InternalServerError().finish()
         }
     }
