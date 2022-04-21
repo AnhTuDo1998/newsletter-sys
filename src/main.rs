@@ -1,12 +1,21 @@
+use actix_web::web::Json;
 use newsletter_sys::configuration::get_configuration;
 use newsletter_sys::startup::run;
 use sqlx::PgPool;
 use std::net::TcpListener;
-use env_logger::Env;
+use tracing::subscriber::set_global_default;
+use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    // Default will be at INFO level
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let formatting_layer = BunyanFormattingLayer::new("newsletter-sys".into(), std::io::stdout);
+    let subscriber = Registry::default().with(env_filter).with(JsonStorageLayer).with(formatting_layer);
+    
+    // Set default subscriber globally
+    set_global_default(subscriber).expect("Failed to set subscriber");
     // Read configuration
     let configs = get_configuration().expect("Failed to read configs!");
     // DB connection
