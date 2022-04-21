@@ -8,7 +8,7 @@ use std::net::TcpListener;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // For telemetry of application (tracing)
-    let subscriber = get_subscriber("newsletter-sys".into(), "info".into());
+    let subscriber = get_subscriber("newsletter-sys".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber);
 
     // Read configuration

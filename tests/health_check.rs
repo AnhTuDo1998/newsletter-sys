@@ -9,10 +9,17 @@ use uuid::Uuid;
 
 // Ensure one init only
 static TRACING: Lazy<()> = Lazy::new(|| {
-        // Init telemetry tracer
-        let subscriber = get_subscriber("test".into(), "debug".into());
+    // Init telemetry trace
+    let default_filter_level = "info".to_string();
+    let suscriber_name = "test".to_string();
+    // Decide to forward traces to stdout sink or not
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = get_subscriber("test".into(), "debug".into(), std::io::stdout);
         init_subscriber(subscriber);
-    
+    } else {
+        let subscriber = get_subscriber("test".into(), "debug".into(), std::io::sink);
+        init_subscriber(subscriber);
+    }
 });
 
 pub struct TestApp {
