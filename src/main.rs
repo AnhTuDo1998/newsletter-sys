@@ -4,6 +4,7 @@ use newsletter_sys::startup::run;
 use newsletter_sys::telemetry::{get_subscriber, init_subscriber};
 use sqlx::PgPool;
 use std::net::TcpListener;
+use secrecy::ExposeSecret;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -14,7 +15,7 @@ async fn main() -> std::io::Result<()> {
     // Read configuration
     let configs = get_configuration().expect("Failed to read configs!");
     // DB connection
-    let connection_pool = PgPool::connect(&configs.database.connection_string())
+    let connection_pool = PgPool::connect(&configs.database.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres.");
     let address = format!("127.0.0.1:{}", configs.application_port);
