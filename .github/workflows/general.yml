@@ -71,6 +71,10 @@ jobs:
             --no-default-features
             --locked
 
+      - name: Check sqlx-data.json is up-to-date
+        run: |
+          cargo sqlx prepare --check -- --bin zero2prod
+
       - name: Migrate database
         run: |
           sudo apt-get install libpq-dev -y
