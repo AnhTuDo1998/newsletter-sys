@@ -15,10 +15,11 @@ async fn main() -> std::io::Result<()> {
     // Read configuration
     let configs = get_configuration().expect("Failed to read configs!");
     // DB connection
-    let connection_pool = PgPool::connect(&configs.database.connection_string().expose_secret())
-        .await
+    let connection_pool = PgPool::connect_lazy(&configs.database.connection_string().expose_secret())
         .expect("Failed to connect to Postgres.");
-    let address = format!("127.0.0.1:{}", configs.application_port);
+    let address = format!("{}:{}", configs.application.host, configs.application.port);
     let listener = TcpListener::bind(address).expect("Failed in binding address/port!");
-    run(listener, connection_pool)?.await
+    run(listener, connection_pool)?.await?;
+
+    Ok(())
 }
